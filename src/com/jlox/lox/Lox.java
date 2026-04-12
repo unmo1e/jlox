@@ -10,13 +10,15 @@ import java.util.List;
 
 public class Lox {
     static boolean hadError = false;
-    
+
     private static void run(String source) {
         Scanner scanner = new Scanner(source);
         List<Token> tokens = scanner.scanTokens();
-        for (Token token : tokens) {
-            System.out.println(token);
-        }
+        Parser parser = new Parser(tokens);
+        Expr expression = parser.parse();
+        // Stop if there was a syntax error.
+        if (hadError) return;
+        System.out.println(new AstPrinter().print(expression));
     }
 
     private static void runFile(String path) throws IOException {
@@ -50,23 +52,19 @@ public class Lox {
         }
     }
 
-    // testing AstPrinter
-    // public static void main(String[] args) {
-    //     Expr expression = new Expr.Binary(
-    //                                       new Expr.Unary(
-    //                                                      new Token(TokenType.MINUS, "-", null, 1),
-    //                                                      new Expr.Literal(123)),
-    //                                       new Token(TokenType.STAR, "*", null, 1),
-    //                                       new Expr.Grouping(
-    //                                                         new Expr.Literal(45.67)));
-
-    //     System.out.println(new AstPrinter().print(expression));
-    // }
-
+    // error handling
     static void error(int line, String message) {
         report(line, "", message);
     }
 
+    static void error(Token token, String message) {
+        if (token.type == TokenType.EOF) {
+            report(token.line, " at end", message);
+        } else {
+            report(token.line, " at '" + token.lexeme + "'", message);
+        }
+    }
+    
     private static void report(int line, String where,
                                String message) {
         System.err.println("[line " + line + "] Error" + where + ": " + message);
