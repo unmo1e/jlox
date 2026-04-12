@@ -1,0 +1,19 @@
+* Compile
+
+First generate the Expr and Stmt files.
+#+begin_src
+  $ javac -d out src/com/jlox/tool/*.java
+  $ java -cp out com.jlox.tool.GenerateAst ./src/com/jlox/lox
+#+end_src
+
+Then compile with
+#+begin_src
+  $ javac -d out src/com/jlox/lox/*.java
+#+end_src
+
+* Run
+
+To lauch the REPL
+#+begin_src
+ $ java -cp out com.jlox.lox.Lox
+#+end_src
