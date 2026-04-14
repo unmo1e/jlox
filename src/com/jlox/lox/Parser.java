@@ -1,6 +1,7 @@
 package com.jlox.lox;
 
 import java.util.List;
+import java.util.ArrayList;
 
 import static com.jlox.lox.TokenType.*;
 
@@ -12,18 +13,89 @@ class Parser {
         tokens = _tokens;
     }
 
-    Expr parse() {
+    List<Stmt> parse() {
+        List<Stmt> statements = new ArrayList<>();
+        while (!isAtEnd()) {
+            statements.add(declaration());
+        }
+        return statements;
+    }
+
+    private Stmt declaration() {
         try {
-            return expression();
-        } catch (ParseError error) {
+            if(match(VAR))
+                return varDeclaration();
+            return statement();
+        } catch(ParseError error) {
+            synchronize();
             return null;
         }
     }
 
-    private Expr expression() {
-        return equality();
+    private Stmt varDeclaration() {
+        Token name = consume(IDENTIFIER, "Expected a variable name.");
+        // the optional initializer
+        Expr initializer = null;
+        if(match(EQUAL)) {
+            initializer = expression();
+        }
+        consume(SEMICOLON, "Expected a ';' after variable declaration.");
+        return new Stmt.Var(name, initializer);
+    }
+    
+    private Stmt statement() {
+        if (match(PRINT)) return printStatement();
+        if (match(LEFT_BRACE)) return new Stmt.Block(block());
+        return expressionStatement();
     }
 
+    private List<Stmt> block() {
+        List<Stmt> statements = new ArrayList<>();
+        while(!check(RIGHT_BRACE) && !isAtEnd()) {
+            statements.add(declaration());
+        }
+        consume(RIGHT_BRACE, "Expect '}' after a block.");
+        return statements;
+    }
+    
+    private Stmt printStatement() {
+        Expr value = expression();
+        consume(SEMICOLON, "Expect ';' after value.");
+        return new Stmt.Print(value);
+    }
+
+    private Stmt expressionStatement() {
+        Expr expr = expression();
+        consume(SEMICOLON, "Expect ';' after expression.");
+        return new Stmt.Expression(expr);
+    }
+    
+    private Expr expression() {
+        return assignment();
+    }
+
+    // assignment
+    private Expr assignment() {
+        Expr expr = equality();
+
+        // if we have a equal sign, it is assignment
+        if(match(EQUAL)) {
+            Token equals = previous();
+            // since assignment is right-associative
+            // we call the function itself rather than equality();
+            Expr value = assignment();
+
+            // we need to check if expr is proper l-value
+            if(expr instanceof Expr.Variable) {
+                Token name = ((Expr.Variable)expr).name;
+                return new Expr.Assign(name, value);
+            }
+
+            error(equals, "Invalid assignment target.");
+        }
+        return expr;
+    }
+    
     // == and !=
     private Expr equality() {
         Expr expr = comparision();
@@ -95,6 +167,10 @@ class Parser {
             return new Expr.Grouping(expr);
         }
 
+        if(match(IDENTIFIER)) {
+            return new Expr.Variable(previous());
+        }
+        
         // we got a token that can't make expression
         throw error(peek(), "Expect expression.");
     }
