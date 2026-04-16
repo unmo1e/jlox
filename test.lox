@@ -1,6 +1,23 @@
-var a = 1;
-{
-  var a = a + 2;
-  print a;
-}
-print a;
+// if else
+var x = 10;
+if (x < 2) {
+  print("x is less than 2");
+ } else {
+  print("x is greater or equal to 2");
+ }
+
+// short-circuit test
+print "hi" or 2; // will print "hi".
+print nil or "yes"; // will print "yes".
+
+print "while loop:";
+var i = 5;
+while(i > 0) {
+  print i;
+  i = i - 1;
+ }
+
+print "for loop:";
+for(var i = 0; i < 5; i = i + 1) {
+  print i;
+ }

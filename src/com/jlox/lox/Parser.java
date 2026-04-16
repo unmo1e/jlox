@@ -2,6 +2,7 @@ package com.jlox.lox;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import static com.jlox.lox.TokenType.*;
 
@@ -42,10 +43,14 @@ class Parser {
         consume(SEMICOLON, "Expected a ';' after variable declaration.");
         return new Stmt.Var(name, initializer);
     }
-    
+
     private Stmt statement() {
+        if (match(IF)) return ifStatement();
         if (match(PRINT)) return printStatement();
+        if (match(WHILE)) return whileStatement();
+        if (match(FOR)) return forStatement();
         if (match(LEFT_BRACE)) return new Stmt.Block(block());
+
         return expressionStatement();
     }
 
@@ -57,11 +62,84 @@ class Parser {
         consume(RIGHT_BRACE, "Expect '}' after a block.");
         return statements;
     }
-    
+
+    private Stmt whileStatement() {
+        consume(LEFT_PAREN, "Expect '(' after while.");
+        Expr condition = expression();
+        consume(RIGHT_PAREN, "Expect ')' after condition expression.");
+        Stmt body = statement();
+        return new Stmt.While(condition, body);
+    }
+
+    private Stmt forStatement() {
+        consume(LEFT_PAREN, "Expect '(' after for.");
+
+        // initializer
+        Stmt initializer = null;
+        if(match(SEMICOLON)) {
+            initializer = null;
+        } else if(match(VAR)) {
+            initializer = varDeclaration();
+        } else {
+            initializer = expressionStatement();
+        }
+
+        // condition (we see if token is semicolon
+        // to determine if we have a condition)
+        Expr condition = null;
+        if(!check(SEMICOLON)) {
+            condition = expression();
+        }
+        consume(SEMICOLON, "Expect ';' after for loop condition");
+
+        // increment condition (see if token is right paren)
+        Expr increment = null;
+        if(!check(RIGHT_PAREN)) {
+            increment = expression();
+        }
+        consume(RIGHT_PAREN, "Expect ')' after for loop update expression.");
+
+        // body
+        Stmt body = statement();
+
+        // convert to while loop
+        // 1. add increment to the body using Block
+        if (increment != null) {
+            body = new Stmt.Block(Arrays.asList(body,
+                                                new Stmt.Expression(increment)));
+        }
+
+        // 2. make the loop
+        if(condition == null)
+            condition = new Expr.Literal(true);
+        body = new Stmt.While(condition, body);
+
+        // 3. add initializer using Block
+        if (initializer != null) {
+            body = new Stmt.Block(Arrays.asList(initializer, body));
+        }
+
+        // return the for loop converted to while loop in Parse Tree
+        return body;
+    }
+
     private Stmt printStatement() {
         Expr value = expression();
         consume(SEMICOLON, "Expect ';' after value.");
         return new Stmt.Print(value);
+    }
+
+    private Stmt ifStatement() {
+        consume(LEFT_PAREN, "Expect '(' after if.");
+        Expr condition = expression();
+        consume(RIGHT_PAREN, "Expect ')' after condition");
+
+        Stmt thenBranch = statement();
+        Stmt elseBranch = null;
+        if(match(ELSE))
+            elseBranch = statement();
+
+        return new Stmt.If(condition, thenBranch, elseBranch);
     }
 
     private Stmt expressionStatement() {
@@ -69,14 +147,14 @@ class Parser {
         consume(SEMICOLON, "Expect ';' after expression.");
         return new Stmt.Expression(expr);
     }
-    
+
     private Expr expression() {
         return assignment();
     }
 
     // assignment
     private Expr assignment() {
-        Expr expr = equality();
+        Expr expr = or();
 
         // if we have a equal sign, it is assignment
         if(match(EQUAL)) {
@@ -95,7 +173,32 @@ class Parser {
         }
         return expr;
     }
-    
+
+    // logical or and and
+    private Expr or() {
+        Expr expr = and();
+
+        while (match(OR)) {
+            Token operator = previous();
+            Expr right = and();
+            expr = new Expr.Logical(expr, operator, right);
+        }
+
+        return expr;
+    }
+
+    private Expr and() {
+        Expr expr = equality();
+
+        while (match(AND)) {
+            Token operator = previous();
+            Expr right = equality();
+            expr = new Expr.Logical(expr, operator, right);
+        }
+
+        return expr;
+    }
+
     // == and !=
     private Expr equality() {
         Expr expr = comparision();
@@ -170,7 +273,7 @@ class Parser {
         if(match(IDENTIFIER)) {
             return new Expr.Variable(previous());
         }
-        
+
         // we got a token that can't make expression
         throw error(peek(), "Expect expression.");
     }
