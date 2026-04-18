@@ -1,3 +1,5 @@
+print --1;
+
 // if else
 var x = 10;
 if (x < 2) {
