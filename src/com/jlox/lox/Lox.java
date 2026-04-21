@@ -10,18 +10,31 @@ import java.util.List;
 
 public class Lox {
     private static final Interpreter interpreter = new Interpreter();
-    
+
     static boolean hadError = false;
     static boolean hadRuntimeError = false;
 
     private static void run(String source) {
         Scanner scanner = new Scanner(source);
         List<Token> tokens = scanner.scanTokens();
+
+        // parsing
         Parser parser = new Parser(tokens);
         List<Stmt> statements = parser.parse();
-        // Stop if there was a syntax error.
         if (hadError) return;
-        interpreter.interpret(statements);
+
+        // variable resolution
+        Resolver resolver = new Resolver(interpreter);
+        resolver.resolve(statements);
+        if (hadError) return;
+
+        // detect stack overflow
+        // TODO: report the function which caused overflow
+        try {
+            interpreter.interpret(statements);
+        } catch (StackOverflowError e) {
+            System.err.println("Recursion caused a stack overflow!");
+        }
     }
 
     private static void runFile(String path) throws IOException {
@@ -74,7 +87,7 @@ public class Lox {
         System.out.println(error.getMessage() + "\n[line " + error.token.line + "]");
         hadRuntimeError = true;
     }
-    
+
     private static void report(int line, String where,
                                String message) {
         System.err.println("[line " + line + "] Error" + where + ": " + message);
