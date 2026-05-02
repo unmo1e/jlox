@@ -5,10 +5,18 @@ import java.util.List;
 class LoxFunction implements LoxCallable {
     private final Stmt.Function declaration;
     private final Environment closure;
-    
-    LoxFunction(Stmt.Function _declaration, Environment _closure) {
+    private final boolean isInitializer;
+
+    LoxFunction(Stmt.Function _declaration, Environment _closure, boolean _isInitializer) {
         declaration = _declaration;
         closure = _closure;
+        isInitializer = _isInitializer;
+    }
+
+    LoxFunction bind(LoxInstance instance) {
+        Environment environment = new Environment(closure);
+        environment.define("this", instance);
+        return new LoxFunction(declaration, environment, isInitializer);
     }
 
     @Override
@@ -26,8 +34,15 @@ class LoxFunction implements LoxCallable {
         try {
             interpreter.executeBlock(declaration.body, environment);
         } catch(Return returnValue) {
+            if(isInitializer)
+                return closure.getAt(0, "this");
+            
             return returnValue.value;
         }
+
+        // initializer will always return object itself
+        if(isInitializer)
+            return closure.getAt(0, "this");
         return null;
     }
 

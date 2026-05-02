@@ -1,6 +1,9 @@
-fun fib(n) {
-  if (n == 1) return n;
-  return fib(n - 2) + fib(n - 1);
+class Food {
+  eat() {
+    print "Eating " + this.item;
+  }
 }
 
-print fib(2);
+var biryani = Food();
+biryani.item = "Biryani";
+biryani.eat();
