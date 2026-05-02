@@ -1,5 +1,13 @@
-* Compile
+* JLOX
+This is an implementation of the lox programming language. It is the result of following the book [[https://craftinginterpreters.com/][Crafting Interpreters]]. This is the implementation of jlox, the tree-walker interpreter.
 
+** Compile
+To compile the program use bash script
+#+begin_src
+  $ bash compile.sh
+#+end_src
+
+*** Compile Manually
 First generate the Expr and Stmt files.
 #+begin_src
   $ javac -d out src/com/jlox/tool/*.java
@@ -11,9 +19,34 @@ Then compile with
   $ javac -d out src/com/jlox/lox/*.java
 #+end_src
 
-* Run
-
+** Run
 To lauch the REPL
 #+begin_src
  $ java -cp out com.jlox.lox.Lox
+#+end_src
+
+To run a file
+#+begin_src
+ $ java -cp out com.jlox.lox.Lox [file.lox]
+#+end_src
+
+** Jar
+After creating the .class files from compilation step run the bash script
+#+begin_src
+  $ bash make-jar.sh
+#+end_src
+
+Or jar manually using the following command
+#+begin_src
+  $ jar -c --file=Lox.jar -e com.jlox.lox.Lox -C out .
+#+end_src
+
+To run the repl
+#+begin_src
+  $ java -jar Lox.jar
+#+end_src
+
+To run a file
+#+begin_src
+  $ java -jar Lox.jar [file.lox]
 #+end_src

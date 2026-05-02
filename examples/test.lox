@@ -1,9 +1,19 @@
-class Food {
-  eat() {
-    print "Eating " + this.item;
+class A {
+  method() {
+    print "A method";
   }
 }
 
-var biryani = Food();
-biryani.item = "Biryani";
-biryani.eat();
+class B < A {
+  method() {
+    print "B method";
+  }
+
+  test() {
+    super.method();
+  }
+}
+
+class C < B {}
+
+C().test();
